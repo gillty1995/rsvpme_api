@@ -3,6 +3,11 @@ import dotenv from "dotenv";
 import connectDB from "./config/database";
 import routes from "./routes";
 
+// Import middlewares
+import helmetMiddleware from "./middlewares/helmetMiddleware";
+import corsMiddleware from "./middlewares/corsMiddleware";
+import rateLimitMiddleware from "./middlewares/rateLimitMiddleware";
+
 // Load environment variables
 dotenv.config();
 
@@ -11,6 +16,11 @@ const app: Application = express();
 
 // Middleware
 app.use(express.json());
+
+// Apply middlewares
+app.use(helmetMiddleware);     
+app.use(corsMiddleware);            
+app.use(rateLimitMiddleware);     
 
 // Database connection
 connectDB();
