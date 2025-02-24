@@ -4,7 +4,9 @@ declare namespace Express {
         id: string;
         name: string;
         email: string;
+        sub?: string; 
         // Add other properties as needed 
+        userId?: string;
       };
     }
   }
