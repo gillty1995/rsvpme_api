@@ -75,24 +75,24 @@ import bcrypt from "bcryptjs";
 
 // User Schema Interface
 interface IUser extends Document {
-  email: string;
-  password: string;
-  name: string;
-  avatar: string;
-  isValidPassword(password: string): Promise<boolean>;
+  email?: string; // Changed from required to optional
+  password?: string; // Optional for users authenticated via OAuth
+  name?: string; // Changed from required to optional
+  avatar?: string; // Changed from required to optional
+  isValidPassword?(password: string): Promise<boolean>;
 }
 
 // User Schema Definition
 const userSchema = new Schema<IUser>({
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true, select: false },
-  name: { type: String, required: true },
-  avatar: { type: String, required: true },
+  email: { type: String, unique: true, sparse: true }, // 'sparse' allows multiple documents without email
+  password: { type: String, select: false },
+  name: { type: String },
+  avatar: { type: String },
 });
 
 // Hash the password before saving the user
 userSchema.pre<IUser>("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (!this.isModified("password") || !this.password) return next();
   const hashedPassword = await bcrypt.hash(this.password, 10);
   this.password = hashedPassword;
   next();
@@ -100,7 +100,7 @@ userSchema.pre<IUser>("save", async function (next) {
 
 // Check if the entered password is correct
 userSchema.methods.isValidPassword = async function (password: string) {
-  return bcrypt.compare(password, this.password);
+  return this.password ? bcrypt.compare(password, this.password) : false;
 };
 
 const User = model<IUser>("User", userSchema);

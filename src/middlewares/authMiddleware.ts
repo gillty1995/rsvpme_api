@@ -1,78 +1,78 @@
-// import express, { Request, Response, NextFunction } from "express";
-// import { expressjwt, GetVerificationKey } from "express-jwt"; // Import GetVerificationKey from express-jwt
-// import jwksRsa from "jwks-rsa";
-
-// // Set up JWKS (JSON Web Key Set) to get Auth0's public key for verifying the JWT
-// const jwksUri = `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`;
-
-// // Dynamically fetch the public key from Auth0 using the JWKS endpoint
-// const secret = jwksRsa.expressJwtSecret({
-//   jwksUri,
-// }) as unknown as GetVerificationKey; // Cast to GetVerificationKey from express-jwt
-
-// // Define the JWT middleware
-// const jwtCheck = expressjwt({
-//   secret,  // Directly use the secret function (now typed correctly)
-//   audience: process.env.AUTH0_AUDIENCE,
-//   issuer: `https://${process.env.AUTH0_DOMAIN}/`,
-//   algorithms: ["RS256"],
-// });
-
-// // Middleware to verify the JWT
-// export const verifyJWT = (req: Request, res: Response, next: NextFunction): void => {
-//   console.log("JWT Verified, User:", req.user);
-//   try {
-//     jwtCheck(req, res, next);
-//   } catch (err) {
-//     res.status(401).json({ message: "Unauthorized, invalid token." });
-//   }
-// };
-
-import express, { Request, Response, NextFunction } from "express";
-import { expressjwt, GetVerificationKey } from "express-jwt"; // Import GetVerificationKey from express-jwt
+import { Request, Response, NextFunction } from "express";
+import { expressjwt, GetVerificationKey } from "express-jwt";
 import jwksRsa from "jwks-rsa";
+
+// Define Authenticated User Interface
+interface AuthenticatedUser {
+  sub: string; // Auth0 user ID (Always required)
+  email?: string;
+  name?: string;
+}
+
+// Extend Request type to include 'auth' and 'user'
+interface AuthenticatedRequest extends Request {
+  auth?: AuthenticatedUser; // Auth0 token payload
+  user: {
+    id: string;
+    sub: string;
+    userId: string;
+    email: string;
+    name: string;
+  };
+}
 
 // Set up JWKS (JSON Web Key Set) to get Auth0's public key for verifying the JWT
 const jwksUri = `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`;
 
-// Dynamically fetch the public key from Auth0 using the JWKS endpoint
 const secret = jwksRsa.expressJwtSecret({
+  cache: true,
+  rateLimit: true,
   jwksUri,
-}) as unknown as GetVerificationKey; // Cast to GetVerificationKey from express-jwt
+}) as unknown as GetVerificationKey;
 
-// Define the JWT middleware
 const jwtCheck = expressjwt({
-  secret,  // Directly use the secret function (now typed correctly)
+  secret,
   audience: process.env.AUTH0_AUDIENCE,
   issuer: `https://${process.env.AUTH0_DOMAIN}/`,
   algorithms: ["RS256"],
+  requestProperty: "auth", // Store decoded token in req.auth
 });
 
 // Middleware to verify the JWT
-export const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
+export const verifyJWT = (
+  req: Request, // Keep Express Request type here
+  res: Response,
+  next: NextFunction
+) => {
   console.log("Starting JWT verification...");
+  console.log("Authorization Header:", req.headers.authorization);
 
   jwtCheck(req, res, (err) => {
     if (err) {
       console.error("JWT verification failed:", err);
       return res.status(401).json({ message: "Unauthorized, invalid token." });
     }
-    
-    console.log("JWT Verified, User:", req.user);
 
-    // Log the user object to ensure it's correctly populated
-    if (req.user) {
-      console.log("Decoded User Information: ", req.user);
+    // Explicitly cast req as AuthenticatedRequest to resolve TypeScript errors
+    const authenticatedReq = req as AuthenticatedRequest;
+
+    console.log("Decoded Token Payload:", authenticatedReq.auth);
+
+    if (!authenticatedReq.auth || !authenticatedReq.auth.sub) {
+      console.error("Invalid JWT payload. 'sub' field is missing.");
+      return res.status(401).json({ message: "JWT payload is incomplete." });
     }
 
-    // Ensure the user has the 'sub' property in the JWT
-    if (req.user && req.user.sub) {
-      req.user.userId = req.user.sub;  // Store userId for convenience
-      console.log("User ID found and added to request:", req.user.userId);
-      return next();
-    }
+    // Assign user data (ensure all properties are defined)
+    authenticatedReq.user = {
+      id: authenticatedReq.auth.sub,
+      sub: authenticatedReq.auth.sub,
+      userId: authenticatedReq.auth.sub,
+      email: authenticatedReq.auth.email ?? "", // Ensure it's always a string
+      name: authenticatedReq.auth.name ?? "", // Ensure it's always a string
+    };
 
-    console.error("User ID not found in token");
-    return res.status(401).json({ message: "User ID not found in token" });
+    console.log("User assigned to request:", authenticatedReq.user);
+    return next();
   });
 };
