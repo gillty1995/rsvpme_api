@@ -111,7 +111,6 @@ export const getEventById = async (req: Request, res: Response, next: NextFuncti
     const { eventId } = req.params;
     console.log("Fetching event with eventId:", eventId);
 
-    // Determine whether the eventId is an ObjectId or a UUID (uniqueUrl)
     const isMongoId = mongoose.Types.ObjectId.isValid(eventId);
     const isUUID = /^[0-9a-fA-F-]{36}$/.test(eventId);
 
@@ -137,5 +136,39 @@ export const getEventById = async (req: Request, res: Response, next: NextFuncti
   } catch (error) {
     console.error("Error fetching event:", error);
     next(error);
+  }
+};
+
+// delete event
+export const cancelEvent = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { uniqueUrl } = req.params;
+    const userId = req.user?.sub; // Auth0 user ID
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const event = await Event.findOne({ uniqueUrl });
+
+    if (!event) {
+      res.status(404).json({ message: "Event not found" });
+      return;
+    }
+
+    // Check if the logged-in user is the creator of the event
+    if (event.createdBy !== userId) {
+      res.status(403).json({ message: "You are not authorized to delete this event" });
+      return;
+    }
+
+    // Delete the event
+    await Event.deleteOne({ uniqueUrl });
+
+    res.status(200).json({ message: "Event deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express"; 
-import { createEvent, getEventsByUser, getEventById } from "../controllers/eventController"; 
-import { rsvpToEvent, cancelRsvp } from "../controllers/rsvpController"; 
+import { createEvent, getEventsByUser, getEventById, cancelEvent } from "../controllers/eventController"; 
+import { rsvpToEvent, } from "../controllers/rsvpController"; 
 import { verifyJWT } from "../middlewares/authMiddleware";
 
 const router = Router();
@@ -14,8 +14,9 @@ router.post("/", (req: Request, res: Response, next) => {
 router.get("/my-events", verifyJWT, getEventsByUser);
 
 router.get("/:eventId", getEventById);
+router.delete("/:uniqueUrl", verifyJWT, (req, res, next) => cancelEvent(req, res).catch(next));
 
-router.post("/:uniqueUrl/rsvp", rsvpToEvent); // RSVP by uniqueUrl
-router.delete("/:uniqueUrl/rsvp", cancelRsvp); // Cancel RSVP by uniqueUrl
+// router.post("/:uniqueUrl/rsvp", rsvpToEvent); // RSVP by uniqueUrl
+
 
 export default router;
