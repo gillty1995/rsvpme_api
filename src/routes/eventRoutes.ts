@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express"; 
-import { createEvent, getEventsByUser, getEventById, cancelEvent } from "../controllers/eventController"; 
+import { createEvent, getEventsByUser, getEventById, cancelEvent, addToEventList, removeFromEventList } from "../controllers/eventController"; 
 import { rsvpToEvent, } from "../controllers/rsvpController"; 
-import { verifyJWT } from "../middlewares/authMiddleware";
+import { verifyJWT, ensureUserExists } from "../middlewares/authMiddleware";
 
 const router = Router();
 
@@ -11,10 +11,19 @@ router.post("/", (req: Request, res: Response, next) => {
   createEvent(req, res).catch(next); 
 });
 
-router.get("/my-events", verifyJWT, getEventsByUser);
+router.get("/my-events", verifyJWT, ensureUserExists, getEventsByUser);
 
 router.get("/:eventId", getEventById);
 router.delete("/:uniqueUrl", verifyJWT, (req, res, next) => cancelEvent(req, res).catch(next));
+
+router.post("/:eventId/add-to-list", verifyJWT, (req, res, next) => {
+    addToEventList(req, res).catch(next);
+  });
+
+
+router.delete("/:eventId/remove-from-list", verifyJWT, (req, res, next) => {
+    removeFromEventList(req, res).catch(next);
+  });
 
 // router.post("/:uniqueUrl/rsvp", rsvpToEvent); // RSVP by uniqueUrl
 

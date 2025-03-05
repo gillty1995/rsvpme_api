@@ -76,14 +76,12 @@ export const createEvent = async (req: Request, res: Response): Promise<void> =>
 // Get Events Created by User
 export const getEventsByUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log("Authenticated User:", req.user);
-
     if (!req.user) {
       res.status(401).json({ message: "User not authenticated" });
       return;
     }
 
-    const userId = req.user.sub; // Use Auth0 user ID
+    const userId = req.user.sub;
     console.log("Fetching events for user ID:", userId);
 
     if (!userId) {
@@ -91,15 +89,29 @@ export const getEventsByUser = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Fetch events where `createdBy` matches the Auth0 user ID
-    const events = await Event.find({ createdBy: userId });
+    // ✅ Check if the user exists in MongoDB
+    let user = await User.findOne({ _id: userId }).populate("rsvpEvents");
 
-    if (!events || events.length === 0) {
-      res.status(404).json({ message: "No events found" });
-      return;
+    if (!user) {
+      console.log(`User not found, creating new user in DB for ${userId}`);
+
+      user = new User({
+        _id: userId,
+        email: req.user.email || "",
+        name: req.user.name || "Anonymous",
+        rsvpEvents: [],
+      });
+
+      await user.save();
     }
 
-    res.status(200).json({ events });
+    // Fetch events created by the user
+    const createdEvents = await Event.find({ createdBy: userId });
+
+    res.status(200).json({
+      createdEvents,
+      attendingEvents: user.rsvpEvents || [],
+    });
   } catch (error) {
     console.error("Error fetching user events:", error);
     res.status(500).json({ message: "Server error", error });
@@ -170,5 +182,129 @@ export const cancelEvent = async (req: Request, res: Response): Promise<void> =>
   } catch (error) {
     console.error("Error deleting event:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// add to event list 
+export const addToEventList = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+    const userId = req.user?.sub; // Auth0 user ID (string)
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    // Determine if eventId is an ObjectId or UUID
+    const isMongoId = mongoose.Types.ObjectId.isValid(eventId);
+
+    // ✅ Fetch event by either MongoDB `_id` or `uniqueUrl`
+    const event = isMongoId 
+      ? await Event.findById(eventId).lean() 
+      : await Event.findOne({ uniqueUrl: eventId }).lean();
+
+    if (!event) {
+      res.status(404).json({ message: "Event not found" });
+      return;
+    }
+
+    // Ensure user is not the event creator
+    if (event.createdBy === userId) {
+      res.status(400).json({ message: "You cannot add your own event to your list." });
+      return;
+    }
+
+    // ✅ Fix: Ensure user exists, otherwise create them
+    let user = await User.findOne({ _id: userId });
+
+    if (!user) {
+      console.log(`User not found in DB, creating user ${userId}`);
+      user = new User({
+        _id: userId, // Auth0 user ID
+        email: req.user?.email || "",
+        name: req.user?.name || "Anonymous",
+        rsvpEvents: [],
+      });
+
+      await user.save();
+    }
+
+    // ✅ Ensure event `_id` is stored properly
+    const eventObjectId = isMongoId 
+      ? new mongoose.Types.ObjectId(eventId) 
+      : new mongoose.Types.ObjectId(event._id as mongoose.Types.ObjectId);
+
+    // Ensure the event is not already in the user's RSVP list
+    if (user.rsvpEvents.some((e) => e.toString() === eventObjectId.toString())) {
+      res.status(400).json({ message: "Event is already in your RSVP list." });
+      return;
+    }
+
+    // Add event to user's RSVP list
+    user.rsvpEvents.push(eventObjectId);
+    await user.save();
+
+    res.status(200).json({ message: "Event added to your list successfully", eventId });
+  } catch (error) {
+    console.error("Error adding event to list:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// remove attendence
+export const removeFromEventList = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+    const userId = req.user?.sub; // Auth0 user ID (string)
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    // Determine if eventId is an ObjectId or UUID
+    const isMongoId = mongoose.Types.ObjectId.isValid(eventId);
+
+    // Find event by _id or uniqueUrl
+    const event = isMongoId
+      ? await Event.findById(eventId).lean()
+      : await Event.findOne({ uniqueUrl: eventId }).lean();
+
+    if (!event) {
+      res.status(404).json({ message: "Event not found" });
+      return;
+    }
+
+    // Find the user and remove the event from their RSVP list
+    const user = await User.findOne({ _id: userId });
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const eventObjectId = isMongoId
+      ? new mongoose.Types.ObjectId(eventId)
+      : new mongoose.Types.ObjectId(event._id as mongoose.Types.ObjectId);
+
+    // Check if the event exists in the user's RSVP list
+    const eventIndex = user.rsvpEvents.findIndex(
+      (e) => e.toString() === eventObjectId.toString()
+    );
+
+    if (eventIndex === -1) {
+      res.status(400).json({ message: "Event not in your RSVP list" });
+      return;
+    }
+
+    // Remove the event from the RSVP list
+    user.rsvpEvents.splice(eventIndex, 1);
+    await user.save();
+
+    res.status(200).json({ message: "Removed from your RSVP list successfully" });
+  } catch (error) {
+    console.error("Error removing event from list:", error);
+    res.status(500).json({ message: "Server error", error });
   }
 };

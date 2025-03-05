@@ -18,7 +18,7 @@
     "@types/express-jwt": "^6.0.4",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/mongoose": "^5.11.96",
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.13.9",
     "@types/nodemailer": "^6.4.17",
     "@types/uuid": "^10.0.0",
     "nodemon": "^3.1.9",
@@ -27,6 +27,7 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
+    "axios": "^1.8.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

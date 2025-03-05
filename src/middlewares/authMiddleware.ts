@@ -1,6 +1,39 @@
 import { Request, Response, NextFunction } from "express";
 import { expressjwt, GetVerificationKey } from "express-jwt";
 import jwksRsa from "jwks-rsa";
+import User from "../models/User";
+
+export const ensureUserExists = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.user) {
+       res.status(401).json({ message: "User not authenticated" });
+       return;
+    }
+
+    const userId = req.user.sub;
+    console.log("Ensuring user exists in database:", userId);
+
+    let user = await User.findOne({ _id: userId });
+
+    if (!user) {
+      console.log(`User ${userId} does not exist. Creating...`);
+      user = new User({
+        _id: userId,
+        email: req.user.email || "",
+        name: req.user.name || "Anonymous",
+        rsvpEvents: [],
+      });
+
+      await user.save();
+    }
+
+    return next(); // ✅ Explicitly return next() when done
+  } catch (error) {
+    console.error("Error in ensureUserExists middleware:", error);
+     res.status(500).json({ message: "Server error in ensureUserExists." });
+     return;
+  }
+};
 
 // Define Authenticated User Interface
 interface AuthenticatedUser {
@@ -57,6 +90,7 @@ export const verifyJWT = (
     const authenticatedReq = req as AuthenticatedRequest;
 
     console.log("Decoded Token Payload:", authenticatedReq.auth);
+    
 
     if (!authenticatedReq.auth || !authenticatedReq.auth.sub) {
       console.error("Invalid JWT payload. 'sub' field is missing.");
