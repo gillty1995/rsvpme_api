@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "deploy": "npm run build && scp -i /Users/gooee/Desktop/AWS/awskey.pem -r dist src package.json package-lock.json tsconfig.json .env ubuntu@3.144.90.8:~/rsvpme_backend && ssh -i /Users/gooee/Desktop/AWS/awskey.pem ubuntu@3.144.90.8 'cd ~/rsvpme_backend && npm install --production && pm2 restart rsvpme-api --update-env && pm2 save'"
   },
   "keywords": [],
   "author": "",

@@ -73,6 +73,10 @@ const EventSchema = new mongoose_1.Schema({
         unique: true,
         default: () => (0, uuid_1.v4)(), // Automatically generate unique URL using uuid
     },
+    createdBy: {
+        type: String, // Now stores userId as string
+        required: true,
+    },
 }, { timestamps: true });
 const Event = (0, mongoose_1.model)("Event", EventSchema);
 exports.default = Event;

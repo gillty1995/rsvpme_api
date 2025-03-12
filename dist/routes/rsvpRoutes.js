@@ -2,14 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const rsvpController_1 = require("../controllers/rsvpController");
-const authMiddleware_1 = require("../middlewares/authMiddleware"); // Assuming you have a middleware to verify JWT
+const authMiddleware_1 = require("../middlewares/authMiddleware"); // ✅ Import authentication middleware
 const router = (0, express_1.Router)();
-// RSVP to an event
-// This route allows a user to RSVP to an event by providing the eventId in the URL
-// The user must be authenticated to perform this action, which is enforced by the verifyJWT middleware
+// ✅ Add RSVP (Save event to user’s list) - **Protected**
 router.post("/events/:eventId/rsvp", authMiddleware_1.verifyJWT, rsvpController_1.rsvpToEvent);
-// Cancel RSVP for an event
-// This route allows a user to cancel their RSVP to an event by providing the eventId in the URL
-// The user must be authenticated to perform this action, which is also enforced by the verifyJWT middleware
+// ✅ Remove RSVP (Remove event from user’s list) - **Protected**
 router.delete("/events/:eventId/rsvp", authMiddleware_1.verifyJWT, rsvpController_1.cancelRsvp);
+// ✅ Get all RSVP'd events for the user - **Protected**
+router.get("/rsvps", authMiddleware_1.verifyJWT, rsvpController_1.getUserRsvps);
 exports.default = router;

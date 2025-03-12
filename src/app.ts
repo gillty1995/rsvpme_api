@@ -1,44 +1,40 @@
-import express, { Application, Request, Response } from "express";
 import dotenv from "dotenv";
-import connectDB from "./config/database"; // Assuming this is a file for DB connection
-import routes from "./routes/index"; // This imports the consolidated routes from index.ts
+dotenv.config();  // ✅ Load environment variables FIRST before anything else
 
-// Import middlewares
+import express, { Application, Request, Response } from "express";
+import routes from "./routes/index";
 import helmetMiddleware from "./middlewares/helmetMiddleware";
 import corsMiddleware from "./middlewares/corsMiddleware";
 import rateLimitMiddleware from "./middlewares/rateLimitMiddleware";
 import logMiddleware from "./middlewares/logMiddelware";
 import logger from "./utils/logger";
 
-// Load environment variables
-dotenv.config();
-
-// Initialize Express
+// ✅ Initialize Express before using `app`
 const app: Application = express();
 
+// ✅ Now it's safe to set proxy
+app.set("trust proxy", 1);
+
 // Middleware
-app.use(express.json()); // Parse incoming JSON requests
+app.use(express.json());
+app.use(helmetMiddleware);
+app.use(corsMiddleware);
+app.use(rateLimitMiddleware);
+app.use(logMiddleware);
 
-// Apply middlewares
-app.use(helmetMiddleware);  // Security middleware
-app.use(corsMiddleware);    // CORS handling
-app.use(rateLimitMiddleware); // Rate limiting middleware
-app.use(logMiddleware); 
-
-// Database connection
-connectDB();
-
-// Consolidated routes under "/api"
-app.use("/api", routes);  // All routes defined in the "routes" folder will be accessible under /api
+// API Routes
+app.use("/api", routes);
 
 // Test route
 app.get("/", (req: Request, res: Response) => {
   res.send("RSVPMe Backend with TypeScript is running!");
 });
 
+// Global Error Handler
 app.use((err: any, req: Request, res: Response, next: Function) => {
-  logger.error(`Error: ${err.message}`);  // Log the error message
-  res.status(500).json({ message: "Internal Server Error" });  // Send a response to the client
+  logger.error(`Error: ${err.message}`);
+  res.status(500).json({ message: "Internal Server Error" });
 });
 
+// ✅ Export app after everything is declared
 export default app;

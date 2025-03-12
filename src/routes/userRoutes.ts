@@ -10,6 +10,16 @@ router.post("/login", verifyJWT, loginUser);
 // router.put("/profile", verifyJWT, updateUserDetails);
 
 // Logout route (client will handle local JWT removal)
-// router.post("/logout", verifyJWT, logoutUser);
+router.post("/logout", verifyJWT, (req, res) => {
+    res.clearCookie("token", {
+      domain: ".rsvpme.hec.to",
+      path: "/",
+      secure: true,
+      httpOnly: true,
+      sameSite: "none",
+    });
+    res.status(200).json({ message: "Logged out successfully" });
+  });
+  
 
 export default router;

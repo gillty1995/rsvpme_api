@@ -32,32 +32,13 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-// User Schema Definition
-const userSchema = new mongoose_1.Schema({
-    _id: { type: String, required: true },
-    email: { type: String, unique: true, sparse: true }, // 'sparse' allows multiple documents without email
-    password: { type: String, select: false },
-    name: { type: String },
-    avatar: { type: String },
-    rsvpEvents: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: "Event" }],
+const ChatSchema = new mongoose_1.Schema({
+    eventId: { type: String, required: true },
+    userId: { type: String, required: true },
+    email: { type: String, required: true },
+    message: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now },
 });
-// Hash the password before saving the user
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password") || !this.password)
-        return next();
-    const hashedPassword = await bcryptjs_1.default.hash(this.password, 10);
-    this.password = hashedPassword;
-    next();
-});
-// Check if the entered password is correct
-userSchema.methods.isValidPassword = async function (password) {
-    return this.password ? bcryptjs_1.default.compare(password, this.password) : false;
-};
-const User = (0, mongoose_1.model)("User", userSchema);
-exports.default = User;
+exports.default = mongoose_1.default.model("Chat", ChatSchema);

@@ -1,13 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const eventController_1 = require("../controllers/eventController"); // Assuming this is the correct path
-const rsvpController_1 = require("../controllers/rsvpController"); // RSVP routes
+const eventController_1 = require("../controllers/eventController");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
 const router = (0, express_1.Router)();
-// Event Routes
-router.post("/", eventController_1.createEvent); // Route to create an event
-router.get("/:eventId", eventController_1.getEventById); // Route to get an event by eventId
-// RSVP Routes
-router.post("/:eventId/rsvp", rsvpController_1.rsvpToEvent); // Route for RSVP to an event
-router.delete("/:eventId/rsvp", rsvpController_1.cancelRsvp); // Route to cancel RSVP
+router.post("/", (req, res, next) => {
+    console.log("Received POST request to /events");
+    console.log("Request Body:", req.body);
+    (0, eventController_1.createEvent)(req, res).catch(next);
+});
+router.get("/my-events", authMiddleware_1.verifyJWT, authMiddleware_1.ensureUserExists, eventController_1.getEventsByUser);
+router.get("/:eventId", eventController_1.getEventById);
+router.delete("/:uniqueUrl", authMiddleware_1.verifyJWT, (req, res, next) => (0, eventController_1.cancelEvent)(req, res).catch(next));
+router.post("/:eventId/add-to-list", authMiddleware_1.verifyJWT, (req, res, next) => {
+    (0, eventController_1.addToEventList)(req, res).catch(next);
+});
+router.delete("/:eventId/remove-from-list", authMiddleware_1.verifyJWT, (req, res, next) => {
+    (0, eventController_1.removeFromEventList)(req, res).catch(next);
+});
+// router.post("/:uniqueUrl/rsvp", rsvpToEvent); // RSVP by uniqueUrl
 exports.default = router;

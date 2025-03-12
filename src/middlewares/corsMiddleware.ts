@@ -8,6 +8,7 @@ const corsMiddleware = cors({
   origin: process.env.CORS_ALLOWED_ORIGINS?.split(",") || "*",  
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 });
 
 export default corsMiddleware;
