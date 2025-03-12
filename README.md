@@ -4,6 +4,8 @@
 
 The backend of RSVPMe is built using Express.js and Node.js with TypeScript for type safety and maintainability. It provides a RESTful API to manage events, authentication, user data, and contact forms, enabling seamless RSVP and event planning.
 
+Link to frontend: https://github.com/gillty1995/rsvpme
+
 **Technologies Used**
 
 _Core Framework:_
