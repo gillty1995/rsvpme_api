@@ -77,6 +77,15 @@ const EventSchema = new mongoose_1.Schema({
         type: String, // Now stores userId as string
         required: true,
     },
+    rsvps: [
+        {
+            name: {
+                type: String,
+                required: true,
+                trim: true,
+            },
+        },
+    ],
 }, { timestamps: true });
 const Event = (0, mongoose_1.model)("Event", EventSchema);
 exports.default = Event;

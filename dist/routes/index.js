@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const userRoutes_1 = __importDefault(require("./userRoutes"));
 const eventRoutes_1 = __importDefault(require("./eventRoutes"));
-const rsvpRoutes_1 = __importDefault(require("./rsvpRoutes"));
 const contactRoutes_1 = __importDefault(require("./contactRoutes"));
 const chatRoutes_1 = __importDefault(require("./chatRoutes"));
 const placesRoutes_1 = __importDefault(require("./placesRoutes"));
@@ -16,7 +15,7 @@ router.use("/users", userRoutes_1.default);
 // Event Routes
 router.use("/events", eventRoutes_1.default);
 // Rsvp Routes ... may need to be removed if not used
-router.use("/rsvps", rsvpRoutes_1.default);
+// router.use("/rsvps", rsvpRoutes);
 // Contact Routes
 router.use("/", contactRoutes_1.default);
 // Chat Routes

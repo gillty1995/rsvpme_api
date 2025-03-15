@@ -10,7 +10,8 @@ export interface IEvent extends Document {
   rsvpCount: number;
   attendees: mongoose.Types.ObjectId[];
   uniqueUrl: string; 
-  createdBy: string;  // Change createdBy to a string
+  createdBy: string;
+  rsvps: { name: string }[];
 }
 
 const EventSchema: Schema<IEvent> = new Schema(
@@ -56,6 +57,15 @@ const EventSchema: Schema<IEvent> = new Schema(
       type: String,  // Now stores userId as string
       required: true,
     },
+    rsvps: [
+      {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

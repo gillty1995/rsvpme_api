@@ -50,8 +50,7 @@ const jwtCheck = (0, express_jwt_1.expressjwt)({
     requestProperty: "auth", // Store decoded token in req.auth
 });
 // Middleware to verify the JWT
-const verifyJWT = (req, // Keep Express Request type here
-res, next) => {
+const verifyJWT = (req, res, next) => {
     console.log("Starting JWT verification...");
     console.log("Authorization Header:", req.headers.authorization);
     jwtCheck(req, res, (err) => {

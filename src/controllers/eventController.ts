@@ -308,3 +308,103 @@ export const removeFromEventList = async (req: Request, res: Response): Promise<
     res.status(500).json({ message: "Server error", error });
   }
 };
+
+// RSVP to an Event
+export const rsvpToEvent = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+    const { name } = req.body; // Get the RSVP name from the request body
+
+    if (!name || name.trim() === "") {
+      res.status(400).json({ message: "RSVP name is required" });
+      return;
+    }
+
+    // Check if the eventId is a valid MongoDB ObjectId or a UUID
+    const isMongoId = mongoose.Types.ObjectId.isValid(eventId);
+
+    const event = isMongoId
+      ? await Event.findById(eventId)
+      : await Event.findOne({ uniqueUrl: eventId });
+
+    if (!event) {
+      res.status(404).json({ message: "Event not found" });
+      return;
+    }
+
+    // Prevent duplicate RSVPs
+    if (event.rsvps.some((rsvp) => rsvp.name.toLowerCase() === name.toLowerCase())) {
+      res.status(400).json({ message: "You have already RSVP'd for this event" });
+      return;
+    }
+
+    // Add the new RSVP
+    event.rsvps.push({ name });
+    event.rsvpCount += 1; // Increment RSVP count
+    await event.save();
+
+    res.status(200).json({ message: "RSVP added successfully", rsvps: event.rsvps });
+  } catch (error) {
+    console.error("Error adding RSVP:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Get RSVPs for an Event
+export const getEventRsvps = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+
+    const isMongoId = mongoose.Types.ObjectId.isValid(eventId);
+    const event = isMongoId
+      ? await Event.findById(eventId)
+      : await Event.findOne({ uniqueUrl: eventId });
+
+    if (!event) {
+      res.status(404).json({ message: "Event not found" });
+      return;
+    }
+
+    res.status(200).json({ rsvps: event.rsvps });
+  } catch (error) {
+    console.error("Error fetching RSVPs:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Remove RSVP
+export const removeRsvp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+    const { name } = req.body; // Get the name to remove
+
+    const isMongoId = mongoose.Types.ObjectId.isValid(eventId);
+    const event = isMongoId
+      ? await Event.findById(eventId)
+      : await Event.findOne({ uniqueUrl: eventId });
+
+    if (!event) {
+      res.status(404).json({ message: "Event not found" });
+      return;
+    }
+
+    // Remove the RSVP by filtering the array
+    const updatedRsvps = event.rsvps.filter(
+      (rsvp) => rsvp.name.toLowerCase() !== name.toLowerCase()
+    );
+
+    if (updatedRsvps.length === event.rsvps.length) {
+      res.status(400).json({ message: "RSVP name not found" });
+      return;
+    }
+
+    event.rsvps = updatedRsvps;
+    event.rsvpCount -= 1; // Decrement RSVP count
+    await event.save();
+
+    res.status(200).json({ message: "RSVP removed successfully", rsvps: event.rsvps });
+  } catch (error) {
+    console.error("Error removing RSVP:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};

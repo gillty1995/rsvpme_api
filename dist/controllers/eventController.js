@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeFromEventList = exports.addToEventList = exports.cancelEvent = exports.getEventById = exports.getEventsByUser = exports.createEvent = void 0;
+exports.removeRsvp = exports.getEventRsvps = exports.rsvpToEvent = exports.removeFromEventList = exports.addToEventList = exports.cancelEvent = exports.getEventById = exports.getEventsByUser = exports.createEvent = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const Event_1 = __importDefault(require("../models/Event"));
 const User_1 = __importDefault(require("../models/User"));
@@ -267,3 +267,88 @@ const removeFromEventList = async (req, res) => {
     }
 };
 exports.removeFromEventList = removeFromEventList;
+// RSVP to an Event
+const rsvpToEvent = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { name } = req.body; // Get the RSVP name from the request body
+        if (!name || name.trim() === "") {
+            res.status(400).json({ message: "RSVP name is required" });
+            return;
+        }
+        // Check if the eventId is a valid MongoDB ObjectId or a UUID
+        const isMongoId = mongoose_1.default.Types.ObjectId.isValid(eventId);
+        const event = isMongoId
+            ? await Event_1.default.findById(eventId)
+            : await Event_1.default.findOne({ uniqueUrl: eventId });
+        if (!event) {
+            res.status(404).json({ message: "Event not found" });
+            return;
+        }
+        // Prevent duplicate RSVPs
+        if (event.rsvps.some((rsvp) => rsvp.name.toLowerCase() === name.toLowerCase())) {
+            res.status(400).json({ message: "You have already RSVP'd for this event" });
+            return;
+        }
+        // Add the new RSVP
+        event.rsvps.push({ name });
+        event.rsvpCount += 1; // Increment RSVP count
+        await event.save();
+        res.status(200).json({ message: "RSVP added successfully", rsvps: event.rsvps });
+    }
+    catch (error) {
+        console.error("Error adding RSVP:", error);
+        res.status(500).json({ message: "Server error", error });
+    }
+};
+exports.rsvpToEvent = rsvpToEvent;
+// Get RSVPs for an Event
+const getEventRsvps = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const isMongoId = mongoose_1.default.Types.ObjectId.isValid(eventId);
+        const event = isMongoId
+            ? await Event_1.default.findById(eventId)
+            : await Event_1.default.findOne({ uniqueUrl: eventId });
+        if (!event) {
+            res.status(404).json({ message: "Event not found" });
+            return;
+        }
+        res.status(200).json({ rsvps: event.rsvps });
+    }
+    catch (error) {
+        console.error("Error fetching RSVPs:", error);
+        res.status(500).json({ message: "Server error", error });
+    }
+};
+exports.getEventRsvps = getEventRsvps;
+// Remove RSVP
+const removeRsvp = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { name } = req.body; // Get the name to remove
+        const isMongoId = mongoose_1.default.Types.ObjectId.isValid(eventId);
+        const event = isMongoId
+            ? await Event_1.default.findById(eventId)
+            : await Event_1.default.findOne({ uniqueUrl: eventId });
+        if (!event) {
+            res.status(404).json({ message: "Event not found" });
+            return;
+        }
+        // Remove the RSVP by filtering the array
+        const updatedRsvps = event.rsvps.filter((rsvp) => rsvp.name.toLowerCase() !== name.toLowerCase());
+        if (updatedRsvps.length === event.rsvps.length) {
+            res.status(400).json({ message: "RSVP name not found" });
+            return;
+        }
+        event.rsvps = updatedRsvps;
+        event.rsvpCount -= 1; // Decrement RSVP count
+        await event.save();
+        res.status(200).json({ message: "RSVP removed successfully", rsvps: event.rsvps });
+    }
+    catch (error) {
+        console.error("Error removing RSVP:", error);
+        res.status(500).json({ message: "Server error", error });
+    }
+};
+exports.removeRsvp = removeRsvp;

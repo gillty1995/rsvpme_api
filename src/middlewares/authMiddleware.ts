@@ -73,7 +73,7 @@ const jwtCheck = expressjwt({
 
 // Middleware to verify the JWT
 export const verifyJWT = (
-  req: Request, // Keep Express Request type here
+  req: Request, 
   res: Response,
   next: NextFunction
 ) => {

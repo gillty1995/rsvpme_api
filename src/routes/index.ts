@@ -15,7 +15,7 @@ router.use("/users", userRoutes);
 router.use("/events", eventRoutes); 
 
 // Rsvp Routes ... may need to be removed if not used
-router.use("/rsvps", rsvpRoutes);
+// router.use("/rsvps", rsvpRoutes);
 
 // Contact Routes
 router.use("/", contactRoutes);
