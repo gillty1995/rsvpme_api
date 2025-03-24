@@ -62,10 +62,14 @@ export const eventOptions = [
     "Retirement Celebration",
     
     // Niche and Themed Events
+    "Breakfast",
+    "Dinner",
+    "Date",
     "Game Night",
     "Poker Night",
     "Bonfire",
     "Team Meeting",
+    "Brunch",
     "Lunch",
     "Dinner Party",
     "Pool Party",
