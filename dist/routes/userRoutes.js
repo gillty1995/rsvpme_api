@@ -11,7 +11,7 @@ router.post("/login", authMiddleware_1.verifyJWT, userController_1.loginUser);
 // Logout route (client will handle local JWT removal)
 router.post("/logout", authMiddleware_1.verifyJWT, (req, res) => {
     res.clearCookie("token", {
-        domain: ".rsvpme.hec.to",
+        domain: ".rsvpme.mine.bz",
         path: "/",
         secure: true,
         httpOnly: true,
